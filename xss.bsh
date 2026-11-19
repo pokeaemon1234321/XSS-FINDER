@@ -1,0 +1,27 @@
+if [ -z "$1" ]; then
+    echo "Usage: $0 <urls_file>"
+    exit 1
+fi
+
+> success.txt   # clear/create output file fresh each run
+
+grep '=' "$1" | sed 's/=.*/=rohit<>/g' | sort -u | while read -r host; do
+    curl -sk --connect-timeout 5 --max-time 10 \
+        -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+        "$host" -o /tmp/out.html
+    code=$?
+
+    if [ "$code" -ne 0 ]; then
+        echo -e "$host -> \e[33mFAILED (curl exit $code)\e[0m"
+    elif grep -q 'rohit<>' /tmp/out.html; then
+        echo -e "$host -> \e[32mVULNERABLE\e[0m"
+        echo "$host" >> success.txt
+    else
+        echo -e "$host -> \e[31mNOT VULNERABLE\e[0m"
+    fi
+
+    sleep 1
+done
+
+echo ""
+echo "Done. Vulnerable URLs saved to success.txt"
